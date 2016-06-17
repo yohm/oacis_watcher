@@ -37,6 +37,7 @@ class MyWatcher < OacisWatcher
     puts "#{ps} : #{converged}"
     if converged == 1
       $stderr.puts "ParameterSet #{ps.id} has finsihed !!!"
+      sync_directory(ps)
     elsif converged == 0
       convergence_param = ps.v.slice("number_max_iteration", "kerker_apre", "kerker_g0sq")
       idx = D_list.index {|d| d == convergence_param }
@@ -53,6 +54,12 @@ class MyWatcher < OacisWatcher
     else
       raise "must not happen"
     end
+  end
+
+  def sync_directory( ps )
+    path = sprintf("%s/stress_%.1fD-4/xsf_2_i%04d", ps.simulator.name , ps.v["pressure"] , ps.v["position"] )
+    FileUtils.mkdir_p( File.dirname(path) )
+    FileUtils.ln_s( ps.runs.first.dir, path )
   end
 end
 
