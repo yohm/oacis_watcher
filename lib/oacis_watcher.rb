@@ -37,7 +37,8 @@ class OacisWatcher
 
   private
   def check_finished_parameter_sets
-    found_pss = ParameterSet.in(id: observed_parameter_set_ids.uniq ).where(
+    @observed_parameter_set_ids = @observed_parameter_set_ids.uniq.map(&:to_s)
+    found_pss = ParameterSet.in(id: @observed_parameter_set_ids ).where(
       'runs_status_count_cache.created' => 0,
       'runs_status_count_cache.submitted' => 0,
       'runs_status_count_cache.running' => 0
