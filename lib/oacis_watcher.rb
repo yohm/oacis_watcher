@@ -1,14 +1,15 @@
 require 'pp'
-require 'json'
+require 'yaml/store'
 
 class OacisWatcher
 
   POLLING_INTERVAL = 5
   attr_accessor :observed_parameter_set_ids
 
-  def initialize( rails_root_path )
+  def initialize( rails_root_path, store_path )
     @observed_parameter_set_ids = []
     require File.join(rails_root_path, 'config/environment')
+    @db = YAML::Store.new( store_path )
   end
 
   def on_start
@@ -26,9 +27,11 @@ class OacisWatcher
   def run
     $stderr.puts "starting"
     on_start
+    save
     $stderr.puts "start polling"
     loop do
       check_finished_parameter_sets
+      save
       break if @observed_parameter_set_ids.empty?
       sleep POLLING_INTERVAL
     end
@@ -55,5 +58,12 @@ class OacisWatcher
       @observed_parameter_set_ids.delete(ps.id.to_s)
     end
   end
+
+  def save
+    @db.transaction do
+      @db['ps_list'] = @observed_parameter_set_ids.map(&:to_s)
+    end
+  end
+
 end
 

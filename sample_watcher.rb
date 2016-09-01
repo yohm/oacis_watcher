@@ -13,6 +13,13 @@ class MyWatcher < OacisWatcher
   end
 end
 
-watcher = MyWatcher.new( File.dirname(ENV['BUNDLE_GEMFILE']) )
+require 'optparse'
+options = {store_yml: "store.yml"}
+OptionParser.new do |opt|
+  opt.on("-s STORE_PATH", "path to yaml file for storing states") {|v| options[:store_yml] = v }
+  opt.parse!(ARGV)
+end
+
+watcher = MyWatcher.new( File.dirname(ENV['BUNDLE_GEMFILE']), options[:store_yml] )
 watcher.run
 
