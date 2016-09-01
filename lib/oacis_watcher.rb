@@ -1,15 +1,17 @@
 require 'pp'
 require 'yaml/store'
+require 'logger'
 
 class OacisWatcher
 
   POLLING_INTERVAL = 5
   attr_accessor :observed_parameter_set_ids
 
-  def initialize( rails_root_path, store_path )
+  def initialize( rails_root_path, store_path, logger_path )
     @observed_parameter_set_ids = []
     require File.join(rails_root_path, 'config/environment')
     @db = YAML::Store.new( store_path )
+    @logger = Logger.new( logger_path )
   end
 
   def on_start
@@ -25,17 +27,18 @@ class OacisWatcher
   end
 
   def run
-    $stderr.puts "starting"
+    @logger.info "starting"
     on_start
     save
-    $stderr.puts "start polling"
+    @logger.info "start polling"
     loop do
       check_finished_parameter_sets
       save
       break if @observed_parameter_set_ids.empty?
+      @logger.info "waiting for #{POLLING_INTERVAL} sec"
       sleep POLLING_INTERVAL
     end
-    $stderr.puts "stop polling"
+    @logger.info "stop polling"
   end
 
   private
@@ -49,10 +52,12 @@ class OacisWatcher
 
     found_pss.each do |ps|
       if ps.runs.count == 0
-        $stderr.puts "[Warning] #{ps} has no run"
+        @logger.warn "#{ps} has no run"
       elsif ps.runs.where(status: :finished).count > 0
+        @logger.info "calling callback for #{ps.id}"
         on_parameter_set_finished(ps)
       else
+        @logger.info "calling error-callback for #{ps.id}"
         on_parameter_set_all_failed(ps)
       end
       @observed_parameter_set_ids.delete(ps.id.to_s)

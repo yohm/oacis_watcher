@@ -14,12 +14,13 @@ class MyWatcher < OacisWatcher
 end
 
 require 'optparse'
-options = {store_yml: "store.yml"}
+options = {store_yml: "store.yml", logger: $stderr}
 OptionParser.new do |opt|
-  opt.on("-s STORE_PATH", "path to yaml file for storing states") {|v| options[:store_yml] = v }
+  opt.on("-s STORE_FILE", "path to yaml file for storing states") {|v| options[:store_yml] = v }
+  opt.on("-l LOG_FILE",   "path to log file. If this option is not given, logs are printed to stderr") {|v| options[:logger] = v }
   opt.parse!(ARGV)
 end
 
-watcher = MyWatcher.new( File.dirname(ENV['BUNDLE_GEMFILE']), options[:store_yml] )
+watcher = MyWatcher.new( File.dirname(ENV['BUNDLE_GEMFILE']), options[:store_yml], options[:logger] )
 watcher.run
 
