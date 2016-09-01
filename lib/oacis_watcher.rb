@@ -12,6 +12,11 @@ class OacisWatcher
     require File.join(rails_root_path, 'config/environment')
     @db = YAML::Store.new( store_path )
     @logger = Logger.new( logger_path )
+    @sigint_received = false
+    Signal.trap("INT") {
+      $stderr.puts "received SIGINT"
+      @sigint_received = true
+    }
   end
 
   def on_start
@@ -48,9 +53,11 @@ class OacisWatcher
   def poll
     @logger.info "start polling"
     loop do
+      break if @sigint_received
       check_finished_parameter_sets
       save
       break if @observed_parameter_set_ids.empty?
+      break if @sigint_received
       @logger.info "waiting for #{POLLING_INTERVAL} sec"
       sleep POLLING_INTERVAL
     end
@@ -66,6 +73,7 @@ class OacisWatcher
     )
 
     found_pss.each do |ps|
+      break if @sigint_received
       if ps.runs.count == 0
         @logger.warn "#{ps} has no run"
       elsif ps.runs.where(status: :finished).count > 0

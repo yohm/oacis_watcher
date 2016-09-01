@@ -4,8 +4,9 @@ class MyWatcher < OacisWatcher
 
   def on_start
     puts "Hello OACIS Watcher !!!!"
-    ps = ParameterSet.first
-    observed_parameter_set_ids << ps.id.to_s
+    ParameterSet.all.limit(10).each do |ps|
+      observed_parameter_set_ids << ps.id.to_s
+    end
   end
 
   def on_parameter_set_finished(ps)
