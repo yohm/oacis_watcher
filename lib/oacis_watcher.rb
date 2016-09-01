@@ -26,10 +26,26 @@ class OacisWatcher
     raise "implement me"
   end
 
+  def load( store_path )
+    @logger.info "loading #{store_path}"
+    yaml = YAML.load( File.open(store_path) )
+    @observed_parameter_set_ids = yaml['ps_list']
+  end
+
+  def restart
+    @logger.info "restarting"
+    poll
+  end
+
   def run
     @logger.info "starting"
     on_start
     save
+    poll
+  end
+
+  private
+  def poll
     @logger.info "start polling"
     loop do
       check_finished_parameter_sets
@@ -41,7 +57,6 @@ class OacisWatcher
     @logger.info "stop polling"
   end
 
-  private
   def check_finished_parameter_sets
     @observed_parameter_set_ids = @observed_parameter_set_ids.uniq.map(&:to_s)
     found_pss = ParameterSet.in(id: @observed_parameter_set_ids ).where(
