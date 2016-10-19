@@ -1,5 +1,4 @@
 require 'pp'
-require 'yaml/store'
 require 'logger'
 
 class OacisWatcher
@@ -7,11 +6,29 @@ class OacisWatcher
   POLLING_INTERVAL = 5
   attr_accessor :observed_parameter_set_ids
 
-  def initialize( rails_root_path, store_path, logger_path )
-    @observed_parameter_set_ids = []
-    require File.join(rails_root_path, 'config/environment')
-    @db = YAML::Store.new( store_path )
-    @logger = Logger.new( logger_path )
+  def self.start( logger: Logger.new($stderr) )
+    w = self.new( oacis_root, logger: logger )
+    yield w
+    w.send(:start_polling)
+  end
+
+  def self.oacis_root
+    root = ENV["OACIS_ROOT"]
+    unless root
+      $stderr.puts "environment variable 'OACIS_ROOT' must be set"
+      raise "OACIS_ROOT not set"
+    end
+    unless File.directory?(root)
+      $stderr.puts "directory #{root} is not found"
+      raise "OACIS_ROOT is not found"
+    end
+    root
+  end
+
+  def initialize( oacis_root, logger: Logger.new($stderr) )
+    @observed_parameter_sets = {}
+    require File.join( oacis_root, 'config/environment')
+    @logger = logger
     @sigint_received = false
     Signal.trap("INT") {
       $stderr.puts "received SIGINT"
@@ -19,44 +36,22 @@ class OacisWatcher
     }
   end
 
-  def on_start
-    raise "implement me"
-  end
-
-  def on_parameter_set_finished(ps)
-    raise "implement me"
-  end
-
-  def on_parameter_set_all_failed(ps)
-    raise "implement me"
-  end
-
-  def load( store_path )
-    @logger.info "loading #{store_path}"
-    yaml = YAML.load( File.open(store_path) )
-    @observed_parameter_set_ids = yaml['ps_list']
-  end
-
-  def restart
-    @logger.info "restarting"
-    poll
-  end
-
-  def run
-    @logger.info "starting"
-    on_start
-    save
-    poll
+  def watch_ps(ps, &block)
+    if @observed_parameter_sets.has_key?(ps.id)
+      @observed_parameter_sets[ ps.id ].push( block )
+    else
+      @observed_parameter_sets[ ps.id ] = [block]
+    end
+    pp @observed_parameter_sets
   end
 
   private
-  def poll
+  def start_polling
     @logger.info "start polling"
     loop do
       break if @sigint_received
       check_finished_parameter_sets
-      save
-      break if @observed_parameter_set_ids.empty?
+      break if @observed_parameter_sets.empty?
       break if @sigint_received
       @logger.info "waiting for #{POLLING_INTERVAL} sec"
       sleep POLLING_INTERVAL
@@ -65,8 +60,8 @@ class OacisWatcher
   end
 
   def check_finished_parameter_sets
-    @observed_parameter_set_ids = @observed_parameter_set_ids.uniq.map(&:to_s)
-    found_pss = ParameterSet.in(id: @observed_parameter_set_ids ).where(
+    observed_ids = @observed_parameter_sets.keys.map(&:to_s)
+    found_pss = ParameterSet.in(id: observed_ids ).where(
       'runs_status_count_cache.created' => 0,
       'runs_status_count_cache.submitted' => 0,
       'runs_status_count_cache.running' => 0
@@ -78,20 +73,15 @@ class OacisWatcher
         @logger.warn "#{ps} has no run"
       elsif ps.runs.where(status: :finished).count > 0
         @logger.info "calling callback for #{ps.id}"
-        on_parameter_set_finished(ps)
+        @observed_parameter_sets[ps.id].each do |callback|
+          callback.call(ps)
+        end
       else
         @logger.info "calling error-callback for #{ps.id}"
-        on_parameter_set_all_failed(ps)
+        raise "not implemented yet"
       end
-      @observed_parameter_set_ids.delete(ps.id.to_s)
+      @observed_parameter_sets.delete(ps.id)
     end
   end
-
-  def save
-    @db.transaction do
-      @db['ps_list'] = @observed_parameter_set_ids.map(&:to_s)
-    end
-  end
-
 end
 
