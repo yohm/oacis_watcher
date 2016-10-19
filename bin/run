@@ -1,0 +1,5 @@
+#!/bin/bash -eux
+
+export BUNDLE_GEMFILE="${OACIS_ROOT}/Gemfile"
+bundle exec ruby $@
+
