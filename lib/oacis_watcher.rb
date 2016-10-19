@@ -42,7 +42,6 @@ class OacisWatcher
     else
       @observed_parameter_sets[ ps.id ] = [block]
     end
-    pp @observed_parameter_sets
   end
 
   private

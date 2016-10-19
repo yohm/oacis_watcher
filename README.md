@@ -1,122 +1,94 @@
+(This repository is under development.)
+
 # OACIS Watcher
 
 Define a callback function which is executed when all the runs in a parameter set have finished.
 
+
 # Usage
 
-To run a sample code, specify `BUNDLE_GEMFILE` environment variable to point the directory of OACIS.
+To run a sample code, specify `OACIS_ROOT` environment variable to point the directory of OACIS.
 
 ```
-BUNDLE_GEMFILE=~/program/oacis/Gemfile bundle exec ruby sample_watcher.rb
+export OACIS_ROOT=~/oacis
 ```
+
+## Running a sample
+
+To run a sample script,
+
+```sh
+./bin/run samples/minimum_sample.rb
+```
+
+This sample script find 10 parameter sets and print a message when each parameter set is completed.
+
 
 ## Defining your callback functions
 
-In order to define callback functions, you need to create a class which inherits from `OacisWatcher`.
-It's easy to make your class by copying `sample_watcher.rb` to `your_watcher.rb`. (You can use another name for your class.)
-
-```
-cp sample_watcher.rb your_watcher.rb
-```
-
-Then edit the file as following. You just need to define `on_start` and `on_parameter_set_finished` methods. Keep the other parts as they are.
-Except for these methods,
+In order to define callback functions, prepare a ruby script file.
+The script looks like the following.
 
 ```ruby
-class YourWatcher < OacisWatcher
+OacisWatcher.start do |w|       # w is an instance of OacisWatcher
+  # some initialization
+  ...
 
-  def on_start
-    ## EDIT by yourself
+  w.watch_ps( ps ) do |finished|
+    # callback function which is called when runs of the watched PS are finished.
+    ...
   end
-
-  def on_parameter_set_finished
-    ## EDIT by yourself
-  end
-end
-
-...
-```
-
-After you finished defining the methods, you can run the watcher as follows.
-
-```
-BUNDLE_GEMFILE=~/program/oacis/Gemfile bundle exec ruby your_watcher.rb
-```
-
-### Useful APIs of OACIS
-
-Suppose we have a simulator whose ID is "abcd1234" and has parameters "p1", "p2", and "p3".
-
-To get a simulator object,
-
-```
-sim = Simulator.find("abcd1234")
-```
-
-You can find a parameter set under the simulator as follows.
-
-```
-parameter_sets = sim.parameter_sets
-```
-
-If you would like filter out by parameters, use `where` method.
-To find parameter_sets whose "p1" is 100,
-
-```
-filtered = sim.parameter_sets.where( "v.p1": 100 )
-```
-
-Use "v.{parameter_name}" syntax to specify the filtering criteria.
-This method returns "Mongoid::Criteria" object, which is not filtered records but a query.
-You can iterate over the matched parameter sets by `each` method.
-
-```
-sim.parameter_sets.where( "v.p1": 100 ).each do |ps|
-  puts ps.v   # v method returns parameters in hash
 end
 ```
 
-This will print an output like the following.
+Then, run the script as follows.
 
-```
-{"p1"=>100, "p2"=>100, "p3"=>1}
-{"p1"=>100, "p2"=>200, "p3"=>1}
-{"p1"=>100, "p2"=>200, "p3"=>2}
+```sh
+./bin/run your_watcher.rb
 ```
 
-If you would like to find parameter sets whose p1=100 and p2=200,
+First you need to call `OacisWatcher.start` method to start watching OACIS.
+The method continues until all the callbacks have completed.
 
-```
-filtered = sim.parameter_sets.where( "v.p1": 100, "v.p2": 200 )
-```
+### methods of OACIS watcher
 
-To add a new parameter_set to a simulator, use `find_or_create` method.
-It will create a new parameter_set unless an identical parameter_set already exists.
-If an identical parameter_set already exists, it will return the existing parameter_set.
+- `watch_ps( ps ) {|finished| ... }`
+    - The block is called when all the runs under `ps` has completed.
+    - The block argument is the completed parameter set.
+- `watch_run( run ) {|finished| ... }`
+    - The block is called when the run has completed.
+    - The block argument is the completed run.
+- `watch_all_ps( [ps1, ps2, ps3, ...] ) {|finished| ... }`
+    - The block is called when all the parameter sets have completed.
+    - The block argument is an array of the completed parameter sets.
+- `watch_any_ps( [ps1, ps2, ps3, ...] ) {|finished| ... }`
+    - The block is called when any one of the parameter sets have completed.
+    - The block argument is one of the completed parameter set.
 
-```
-new_param = { "p1": 100, "p2": 200, "p3": 3 }
-new_ps = sim.parameter_sets.find_or_create_by(v: new_param)
-```
+### Definition of "completed"
 
-After you create a parameter set, you can add a run to the parameter set as follows.
+A ParameterSet is regarded as completed when all of its runs become either "finished" or "failed".
+It does not depend on the status of Analysis.
 
-```
-host = Host.where(name: "localhost").first
-new_run = new_ps.runs.find_or_create_by( submitted_to: host )
-```
+A Run is regarded as completed when its status becomes either "finished" or "failed", irrespective of the status of Analysis.
 
-To create a run, you need to specify the host to which the job is submitted.
+# License
 
-### APIs of OACIS watcher
+The MIT License (MIT)
 
-- `on_start`
-    - This is called at the beginning of this program.
-    - You can create initial jobs in this method.
-- `observed_parameter_set_ids`
-    - This is an array of IDs of parameter sets which are being watched.
-    - When the runs under a watched parameter set is finished, `on_parameter_set_finished` method is called.
-- `on_parameter_set_finished( ps )`
-    - This is a callback function when all the run of a watched parameter set are finished.
-    - Finished parameter set is given as an argument.
-    - Before this method is called, the ID of this parameter set is removed from `observed_parameter_set_ids`.
+Copyright (c) 2016 Yohsuke Murase
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+## Contributing
+
+1. Fork it
+1. Create your feature branch (git checkout -b my-new-feature)
+1. Commit your changes (git commit -am 'Add some feature')
+1. Push to the branch (git push origin my-new-feature)
+1. Create new Pull Request
+
