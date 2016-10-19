@@ -2,5 +2,5 @@
 
 export BUNDLE_GEMFILE="${OACIS_ROOT}/Gemfile"
 SCRIPT_DIR=$(cd $(dirname $0);pwd)
-bundle exec ruby -r $SCRIPT_DIR/../lib/oacis_watcher.rb $@
+bundle exec ruby -r "$OACIS_ROOT/config/environment" -r "$SCRIPT_DIR/../lib/oacis_watcher.rb" $@
 

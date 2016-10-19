@@ -3,32 +3,19 @@ require 'logger'
 
 class OacisWatcher
 
-  POLLING_INTERVAL = 5
-  attr_accessor :observed_parameter_set_ids
 
-  def self.start( logger: Logger.new($stderr) )
-    w = self.new( oacis_root, logger: logger )
+  def self.start( logger: Logger.new($stderr), polling: 5 )
+    w = self.new( logger: logger, polling: polling )
     yield w
     w.send(:start_polling)
   end
 
-  def self.oacis_root
-    root = ENV["OACIS_ROOT"]
-    unless root
-      $stderr.puts "environment variable 'OACIS_ROOT' must be set"
-      raise "OACIS_ROOT not set"
-    end
-    unless File.directory?(root)
-      $stderr.puts "directory #{root} is not found"
-      raise "OACIS_ROOT is not found"
-    end
-    root
-  end
+  attr_reader :logger
 
-  def initialize( oacis_root, logger: Logger.new($stderr) )
+  def initialize( logger: Logger.new($stderr), polling: 5 )
     @observed_parameter_sets = {}
-    require File.join( oacis_root, 'config/environment')
     @logger = logger
+    @polling = polling
     @sigint_received = false
     Signal.trap("INT") {
       $stderr.puts "received SIGINT"
@@ -37,10 +24,11 @@ class OacisWatcher
   end
 
   def watch_ps(ps, &block)
-    if @observed_parameter_sets.has_key?(ps.id)
-      @observed_parameter_sets[ ps.id ].push( block )
+    psid = ps.id
+    if @observed_parameter_sets.has_key?(psid)
+      @observed_parameter_sets[ psid ].push( block )
     else
-      @observed_parameter_sets[ ps.id ] = [block]
+      @observed_parameter_sets[ psid ] = [ block ]
     end
   end
 
@@ -52,35 +40,40 @@ class OacisWatcher
       check_finished_parameter_sets
       break if @observed_parameter_sets.empty?
       break if @sigint_received
-      @logger.info "waiting for #{POLLING_INTERVAL} sec"
-      sleep POLLING_INTERVAL
+      @logger.info "waiting for #{@polling} sec"
+      sleep @polling
     end
     @logger.info "stop polling"
   end
 
-  def check_finished_parameter_sets
-    observed_ids = @observed_parameter_sets.keys.map(&:to_s)
-    found_pss = ParameterSet.in(id: observed_ids ).where(
-      'runs_status_count_cache.created' => 0,
-      'runs_status_count_cache.submitted' => 0,
-      'runs_status_count_cache.running' => 0
-    )
+  def completed?( ps )
+    ps.runs.in( status: [:created, :submitted, :running] ).count == 0
+  end
 
-    found_pss.each do |ps|
+  def completed_ps_ids( watched_ps_ids )
+    query = Run.in(parameter_set_id: watched_ps_ids).in(status: [:created,:submitted,:running]).selector
+    incomplete_ps_ids = Run.collection.distinct( "parameter_set_id", query )
+    watched_ps_ids - incomplete_ps_ids
+  end
+
+  def check_finished_parameter_sets
+    watched_ps_ids = @observed_parameter_sets.keys
+    psids = completed_ps_ids( watched_ps_ids )
+
+    psids.each do |psid|
       break if @sigint_received
+      ps = ParameterSet.find(psid)
       if ps.runs.count == 0
         @logger.warn "#{ps} has no run"
-      elsif ps.runs.where(status: :finished).count > 0
-        @logger.info "calling callback for #{ps.id}"
-        @observed_parameter_sets[ps.id].each do |callback|
-          callback.call(ps)
-        end
       else
-        @logger.info "calling error-callback for #{ps.id}"
-        raise "not implemented yet"
+        @logger.info "calling callback for #{psid}"
+        while callback = @observed_parameter_sets[psid].shift
+          callback.call( ps )
+          break unless completed?( ps.reload )
+        end
       end
-      @observed_parameter_sets.delete(ps.id)
     end
+    @observed_parameter_sets.delete_if {|psid, procs| procs.empty? }
   end
 end
 
