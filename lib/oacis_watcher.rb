@@ -37,7 +37,9 @@ class OacisWatcher
     @logger.info "start polling"
     loop do
       break if @sigint_received
-      check_finished_parameter_sets
+      begin
+        executed = check_finished_parameter_sets
+      end while executed
       break if @observed_parameter_sets.empty?
       break if @sigint_received
       @logger.info "waiting for #{@polling} sec"
@@ -56,7 +58,9 @@ class OacisWatcher
     watched_ps_ids - incomplete_ps_ids
   end
 
+  # return true, if a callback is executed
   def check_finished_parameter_sets
+    executed = false
     watched_ps_ids = @observed_parameter_sets.keys
     psids = completed_ps_ids( watched_ps_ids )
 
@@ -67,13 +71,16 @@ class OacisWatcher
         @logger.warn "#{ps} has no run"
       else
         @logger.info "calling callback for #{psid}"
+        executed = true
         while callback = @observed_parameter_sets[psid].shift
           callback.call( ps )
           break unless completed?( ps.reload )
         end
       end
     end
+
     @observed_parameter_sets.delete_if {|psid, procs| procs.empty? }
+    executed
   end
 end
 
