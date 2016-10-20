@@ -2,19 +2,18 @@ require 'yaml'
 
 class CandidatesProvider
 
-  def initialize(yaml_path, watcher)
-    @candidates = YAML.load( File.open(yaml_path) )
+  def initialize(base_param, candidate_params, watcher)
     @watcher = watcher
+    @base = base_param
+    @candidates = candidate_params
 
     @sim = Simulator.where(name: "sequential_trial_test").first
     @host = Host.where(name:"localhost").first
     @host_param = @host.default_host_parameters
   end
 
-  def initial_parameters
-    @candidates.map do |x|
-      x["base"].merge(x["candidates"].first)
-    end
+  def initial_parameter
+    @base.merge( @candidates.first )
   end
 
   def create_ps_and_run( param )
@@ -43,16 +42,12 @@ class CandidatesProvider
   end
 
   def find_next_candidate( current_param )
-    found = @candidates.find {|x| x["base"]["p1"] == current_param["p1"] }
-    base = found["base"]
-    candidates = found["candidates"]
-
-    current_idx = candidates.index do |cand|
-      cand["p2"] == current_param["p2"] && cand["p3"] == current_param["p3"]
+    current_idx = @candidates.index do |cand_param|
+      cand_param.each_pair.all? {|key,val| current_param[key]==val }
     end
     next_idx = current_idx+1
 
-    candidates[next_idx] ? base.merge(candidates[next_idx]) : nil
+    @candidates[next_idx] ? @base.merge(@candidates[next_idx]) : nil
   end
 end
 
@@ -66,8 +61,9 @@ pp cand.create_ps_and_run( params.first )
 =end
 
 OacisWatcher::start do |w|
-  cand = CandidatesProvider.new( ARGV.first, w )
-  cand.initial_parameters.each do |param|
-    cand.create_ps_and_run( param )
+  y = YAML.load( File.open(ARGV.first) )
+  y.each do |cand|
+    c = CandidatesProvider.new( cand["base"], cand["candidates"], w )
+    c.create_ps_and_run( c.initial_parameter )
   end
 end
