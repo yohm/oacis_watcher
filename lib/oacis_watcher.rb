@@ -14,6 +14,7 @@ class OacisWatcher
 
   def initialize( logger: Logger.new($stderr), polling: 5 )
     @observed_parameter_sets = {}
+    @observed_parameter_sets_all = {}
     @logger = logger
     @polling = polling
     @sigint_received = false
@@ -32,13 +33,22 @@ class OacisWatcher
     end
   end
 
+  def watch_all_ps( ps_array, &block )
+    sorted_ps_ids = ps_array.map(&:id).sort
+    if @observed_parameter_sets_all.has_key?(sorted_ps_ids)
+      @observed_parameter_sets_all[ sorted_ps_ids ].push( block )
+    else
+      @observed_parameter_sets_all[ sorted_ps_ids ] = [ block ]
+    end
+  end
+
   private
   def start_polling
     @logger.info "start polling"
     loop do
       break if @sigint_received
       begin
-        executed = check_finished_parameter_sets
+        executed = (check_finished_parameter_sets || check_completed_parameter_sets_all)
       end while executed
       break if @observed_parameter_sets.empty?
       break if @sigint_received
@@ -80,6 +90,27 @@ class OacisWatcher
     end
 
     @observed_parameter_sets.delete_if {|psid, procs| procs.empty? }
+    executed
+  end
+
+  def check_completed_parameter_sets_all
+    executed = false
+    watched_ps_ids = @observed_parameter_sets_all.keys.flatten
+    completed = completed_ps_ids( watched_ps_ids )
+
+    @observed_parameter_sets_all.each do |watched_ps_ids, callbacks|
+      if watched_ps_ids.all? {|psid| completed.include?(psid) }
+        @logger.info "calling callback for #{watched_ps_ids}"
+        executed = true
+        while callback = callbacks.shift
+          watched_pss = watched_ps_ids.map {|psid| ParameterSet.find(psid) }
+          callback.call( watched_pss )
+          break if watched_pss.any? {|ps| ! completed?(ps.reload) }
+        end
+      end
+    end
+
+    @observed_parameter_sets_all.delete_if {|psids, procs| procs.empty? }
     executed
   end
 end
