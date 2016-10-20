@@ -51,15 +51,6 @@ class CandidatesProvider
   end
 end
 
-=begin
-cand = CandidatesProvider.new( ARGV.first, nil )
-pp cand
-pp params = cand.initial_parameters
-pp cand.find_next_candidate( params.first )
-pp cand.find_next_candidate( "p1"=>"foo","p2"=>2.5,"p3"=>3.0 )
-pp cand.create_ps_and_run( params.first )
-=end
-
 OacisWatcher::start do |w|
   y = YAML.load( File.open(ARGV.first) )
   y.each do |cand|
