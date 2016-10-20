@@ -9,7 +9,7 @@ sim = Simulator.create!(
     ParameterDefinition.new(key: "p2", type: "Float", default: 1.0),
     ParameterDefinition.new(key: "p3", type: "Float", default: 2.0)
   ],
-  command: "ruby -r json -e 'res=(rand<0.5)?1:0; puts({\"result\":res}.to_json)' > _output.json",
+  command: "ruby -r json -e 'res=(rand<0.5)?1:0; puts({\"result\"=>res}.to_json)' > _output.json",
   executable_on: [Host.where(name: "localhost").first]
 )
 $stderr.puts "A new simulator #{sim.id} is created."

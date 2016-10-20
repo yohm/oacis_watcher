@@ -14,7 +14,7 @@ Register simulator as follows.
     - "p2", Float, 1.0
     - "p3", Float, 2.0
 - Command:
-    - ruby -r json -e 'res=(rand<0.5)?1:0; puts({"result":res}.to_json)' > _output.json
+    - ruby -r json -e 'res=(rand<0.5)?1:0; puts({"result"=>res}.to_json)' > _output.json
 - Input type: JSON
 - Executable_on : localhost
 
