@@ -23,6 +23,7 @@ To run a sample script,
 
 This sample script find 10 parameter sets and print a message when each parameter set is completed.
 
+Type Ctrl-C to stop watching. The submitted jobs are still handled by OACIS since only "OACIS watcher" stops.
 
 ## Defining your callback functions
 
