@@ -17,11 +17,6 @@ class OacisWatcher
     @observed_parameter_sets_all = {}
     @logger = logger
     @polling = polling
-    @sigint_received = false
-    Signal.trap("INT") {
-      $stderr.puts "received SIGINT"
-      @sigint_received = true
-    }
   end
 
   def watch_ps(ps, &block)
@@ -44,6 +39,12 @@ class OacisWatcher
 
   private
   def start_polling
+    @sigint_received = false
+    default_sigaction = Signal.trap("INT") {
+      $stderr.puts "received SIGINT"
+      @sigint_received = true
+    }
+
     @logger.info "start polling"
     loop do
       break if @sigint_received
@@ -55,7 +56,10 @@ class OacisWatcher
       @logger.info "waiting for #{@polling} sec"
       sleep @polling
     end
-    @logger.info "stop polling"
+    @logger.info "stop polling, #{@sigint_received}"
+  ensure
+    Signal.trap("INT", default_sigaction || "DEFAULT")
+    Process.kill("INT", 0) if @sigint_received  # send INT to the current process
   end
 
   def completed?( ps )
