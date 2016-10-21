@@ -14,7 +14,7 @@ Register simulator as follows.
     - "p2", Float, 0.0
     - "p3", Float, 0.0
 - Command:
-    - ruby -r json -e 'j=JSON.load(File.read("_input.json")); f=(j["p1"]-1.0)**2+(j["p2"]-2.0)**2+(j["p3"]-3.0)**2; puts({"f"=>f}.to_json)' > _output.json
+    - `ruby -r json -e 'j=JSON.load(File.read("_input.json")); f=(j["p1"]-1.0)**2+(j["p2"]-2.0)**2+(j["p3"]-3.0)**2; puts({"f"=>f}.to_json)' > _output.json`
 - Input type: JSON
 - Executable_on : localhost
 
