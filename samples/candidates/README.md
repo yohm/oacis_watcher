@@ -2,8 +2,6 @@
 
 A sample of sequential trial of parameters.
 
-For each parameter "p1" (here "p1")
-
 ## Prerequisites
 
 Register simulator as follows.
@@ -14,7 +12,7 @@ Register simulator as follows.
     - "p2", Float, 1.0
     - "p3", Float, 2.0
 - Command:
-    - ruby -r json -e 'res=(rand<0.5)?1:0; puts({"result"=>res}.to_json)' > _output.json
+    - `ruby -r json -e 'res=(rand<0.5)?1:0; puts({"result"=>res}.to_json)' > _output.json`
 - Input type: JSON
 - Executable_on : localhost
 
@@ -27,7 +25,9 @@ BUNDLE_GEMFILE="$OACIS_ROOT/Gemfile" bundle exec ruby -r "$OACIS_ROOT/config/env
 # What does this sample code do?
 
 For each parameter "p1", we try several values of "p2" and "p3" until we found an expected results.
-We assume that the candidates of "p2" and "p3" are given in YAML.
+In this sample, we find it satisfactory when the result=1 is obtained.
+
+The candidates of ("p2","p3")-pair are given in YAML in the following format.
 
 ```candidates.yml
 -
@@ -53,8 +53,8 @@ We assume that the candidates of "p2" and "p3" are given in YAML.
     - {p2: 2.0, p3: -4.0}
 ```
 
-If the result of a Run is 1, we stop the iteration. When the result is 0, we try the next candidate parameters until all the candidates are tried.
-(To see this behavior, the simulator which returns 1 or 0 randomly is used as a surrogate.)
+For each "p1", we try the first candidates. If they are not satisfactory, find the next candidate and executes the job from OACIS.
+The iteration continues until we found satisfactory results for all "p1" or no futher candidate is found.
 
 # How to run
 
