@@ -30,7 +30,15 @@ Search a pair of "p1","p2", and "p3" which minimizes the result of the simulatio
 
 # How to run
 
+Specify the parameters for DE using command line arguments.
+
 ```sh
-../../bin/run optimize_with_oacis.rb
+../../bin/run optimize_with_oacis.rb <num_iterations> <population size> <f> <cr> <seed>
+```
+
+For example, run the following
+
+```sh
+../../bin/run optimize_with_oacis.rb 10 20 0.8 0.9 1234
 ```
 
