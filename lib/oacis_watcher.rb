@@ -51,7 +51,7 @@ class OacisWatcher
       begin
         executed = (check_finished_parameter_sets || check_completed_parameter_sets_all)
       end while executed
-      break if @observed_parameter_sets.empty?
+      break if @observed_parameter_sets.empty? && @observed_parameter_sets_all.empty?
       break if @sigint_received
       @logger.info "waiting for #{@polling} sec"
       sleep @polling
