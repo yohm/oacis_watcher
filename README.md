@@ -7,7 +7,9 @@ Define a callback function which is executed when all the runs in a parameter se
 
 # Usage
 
-To run a sample code, specify `OACIS_ROOT` environment variable to point the directory of OACIS.
+## Preparation
+
+To run a sample code, specify `OACIS_ROOT` environment variable such that it points to the directory of OACIS.
 
 ```
 export OACIS_ROOT=~/oacis
@@ -28,7 +30,8 @@ Type Ctrl-C to stop watching. The submitted jobs are still handled by OACIS sinc
 ## Defining your callback functions
 
 In order to define callback functions, prepare a ruby script file.
-The script looks like the following.
+Call `OacisWatcher.start`, and define your callbacks in the block given to `start` method. Polling will start after block is evaluated.
+A script might look like the following.
 
 ```ruby
 OacisWatcher.start do |w|       # w is an instance of OacisWatcher
@@ -37,34 +40,34 @@ OacisWatcher.start do |w|       # w is an instance of OacisWatcher
 
   w.watch_ps( ps ) do |finished|
     # callback function which is called when runs of the watched PS are finished.
+    # you can also define another callback here.
     ...
   end
 end
 ```
 
-Then, run the script as follows.
+The method continues until all the callbacks have completed. In other words, `OacisWatcher.start` method returns when all the callbacks are finished.
+
+You can recursively define another callback from inside of a callback functions. Thus, we can iterate job creation until a condition is satisfied.
+
+After you prepared a script, run it as follows.
 
 ```sh
 ./bin/run your_watcher.rb
 ```
-
-First you need to call `OacisWatcher.start` method to start watching OACIS.
-The method continues until all the callbacks have completed.
 
 ### methods of OACIS watcher
 
 - `watch_ps( ps ) {|finished| ... }`
     - The block is called when all the runs under `ps` has completed.
     - The block argument is the completed parameter set.
-- `watch_run( run ) {|finished| ... }`
-    - The block is called when the run has completed.
-    - The block argument is the completed run.
 - `watch_all_ps( [ps1, ps2, ps3, ...] ) {|finished| ... }`
     - The block is called when all the parameter sets have completed.
     - The block argument is an array of the completed parameter sets.
 - `watch_any_ps( [ps1, ps2, ps3, ...] ) {|finished| ... }`
     - The block is called when any one of the parameter sets have completed.
     - The block argument is one of the completed parameter set.
+    - (Not implemented yet...)
 
 ### Definition of "completed"
 
@@ -92,4 +95,3 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 1. Commit your changes (git commit -am 'Add some feature')
 1. Push to the branch (git push origin my-new-feature)
 1. Create new Pull Request
-
