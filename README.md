@@ -64,10 +64,6 @@ After you prepared a script, run it as follows.
 - `watch_all_ps( [ps1, ps2, ps3, ...] ) {|finished| ... }`
     - The block is called when all the parameter sets have completed.
     - The block argument is an array of the completed parameter sets.
-- `watch_any_ps( [ps1, ps2, ps3, ...] ) {|finished| ... }`
-    - The block is called when any one of the parameter sets have completed.
-    - The block argument is one of the completed parameter set.
-    - (Not implemented yet...)
 
 ### Definition of "completed"
 
@@ -95,3 +91,4 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 1. Commit your changes (git commit -am 'Add some feature')
 1. Push to the branch (git push origin my-new-feature)
 1. Create new Pull Request
+
