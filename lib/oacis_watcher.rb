@@ -49,7 +49,7 @@ class OacisWatcher
     loop do
       break if @sigint_received
       begin
-        executed = (check_finished_parameter_sets || check_completed_parameter_sets_all)
+        executed = (check_completed_ps || check_completed_ps_all)
       end while executed
       break if @observed_parameter_sets.empty? && @observed_parameter_sets_all.empty?
       break if @sigint_received
@@ -73,7 +73,7 @@ class OacisWatcher
   end
 
   # return true, if a callback is executed
-  def check_finished_parameter_sets
+  def check_completed_ps
     executed = false
     watched_ps_ids = @observed_parameter_sets.keys
     psids = completed_ps_ids( watched_ps_ids )
@@ -97,7 +97,7 @@ class OacisWatcher
     executed
   end
 
-  def check_completed_parameter_sets_all
+  def check_completed_ps_all
     executed = false
     watched_ps_ids = @observed_parameter_sets_all.keys.flatten
     completed = completed_ps_ids( watched_ps_ids )
