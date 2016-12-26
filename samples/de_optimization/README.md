@@ -50,5 +50,5 @@ oacis_ruby optimize_with_oacis.rb 10 20 0.8 0.9 1234
 A scatter plot of the sampled parameters. Color scale indicates the simulation outputs.
 As you see in the figure, region close to the optimal point is more intensively sampled.
 
-![sample](scatter_plot.svg)
+![sample](scatter_plot.png)
 
