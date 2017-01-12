@@ -1,4 +1,4 @@
-(This repository is under development.)
+**The contents of this repostiory has been included in OACIS. This repository is no longer necessary and will not be maintained. Visit [OACIS page](https://github.com/crest-cassia/oacis) instead.**
 
 # OACIS Watcher
 
